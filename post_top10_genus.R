@@ -1,10 +1,8 @@
-setwd('D:/Zhang Di/linshibangong/linshiMonkey/杭高院')
-rnr = read.csv('new_ssn_202406/response_by_homaIR.csv')[c("Animal_ID", "Sample_ID", "Effect_this", "type")]  # R/NR 根据homa-IR判断
+setwd('D:/GLP1RA/')
+rnr = read.csv('response_by_homaIR.csv')[c("Animal_ID", "Sample_ID", "Effect_this", "type")]  # R/NR based on homa-IR improvement
 test_id = rnr[rnr$type=='test', 'Sample_ID']
 rnr_ = structure(rnr$Effect_this, names=rnr$Sample_ID) 
 
-
-setwd("D:/Zhang Di/linshibangong/linshiMonkey/杭高院/direct_data/")
 
 library(stringr)
 library(ggplot2)
@@ -23,7 +21,7 @@ f1 = read.csv('spe_7level_T1.csv', row.names = 1)  # spe_7level_T1.csv
 label = f1[c('tax', 'label')]
 f1 = f1[grepl('[FGH]', colnames(f1))]
 colnames(f1) = str_sub(colnames(f1), 1, -4)
-f1 = f1[!colnames(f1) %in% test_id ]   ######################### 很重要，如果忘记会导致RF模型train/test之间数据泄露!!!!!!!!!!!!!!
+f1 = f1[!colnames(f1) %in% test_id ]   
 
 coT1T3 = intersect(rownames(f1), rownames(f3))
 f1 = f1[coT1T3, ]; f3 = f3[coT1T3, ]
@@ -32,8 +30,8 @@ top = function(df){ df = df[order(rowMeans(df), decreasing = T)[1:9], ]; df['Oth
 
 
 f = f3  # f3
-f = f[grepl(';p__', rownames(f)), ]  # 提取门物种
-rownames(f) = str_sub(str_extract(rownames(f), ';[a-z]__.*'), 2) # 删掉前缀
+f = f[grepl(';p__', rownames(f)), ] 
+rownames(f) = str_sub(str_extract(rownames(f), ';[a-z]__.*'), 2)
 top_f = top(f)
 dat = melt(top_f, id.vars = 'Taxonomy', variable.name = 'Sample')
 dat$Sample = as.character(dat$Sample); dat['Response'] = rnr_[dat$Sample]
@@ -71,19 +69,14 @@ ggplot(dat, aes(x=Response, y=100 * value, alluvium = Taxonomy, stratum = Taxono
 
 
 
-
-
-
-
 ############################################# human 16S top10 genera ########################
 
-hsa = read.csv('../../PRJNA665123/filter_mito/ra_level_6.csv', row.names = 1, check.names = F)
+hsa = read.csv('PRJNA665123/filter_mito/ra_level_6.csv', row.names = 1, check.names = F)
 rownames(hsa) = str_match(rownames(hsa), 'g__[\\S]+')
 hsa = hsa[rownames(hsa) != 'g__Unclassified', ]
 sid = read.csv('../../PRJNA665123/filter_mito/pheno.csv', row.names=1)
 hsa_t0 = hsa[, colnames(hsa) %in% sid$L0_SRR]
 hsa_t3 = hsa[, colnames(hsa) %in% sid$L4_SRR]
-
 
 # average-value of top10
 hsa_f = hsa_t3
@@ -103,12 +96,6 @@ ggplot(dat, aes(x=time, y=100 * value, alluvium = Taxonomy, stratum = Taxonomy))
   labs(x = '', y = 'Relative Abundance(%)') + 
   coord_fixed(ratio = 0.04) +
   theme_classic() 
-
-
-
-
-
-
 
 
 
