@@ -1,4 +1,8 @@
-setwd('D:/Zhang Di/linshibangong/linshiMonkey/杭高院')
+setwd('D:/GLP1RA/')
+rnr = read.csv('response_by_homaIR.csv')[c("Animal_ID", "Sample_ID", "Effect_this", "type")]  # R/NR based on homa-IR improvement
+test_id = rnr[rnr$type=='test', 'Sample_ID']
+rnr_ = structure(rnr$Effect_this, names=rnr$Sample_ID) 
+
 library(ggplot2)
 library(reshape2)
 
