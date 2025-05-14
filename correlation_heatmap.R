@@ -1,10 +1,10 @@
-setwd('D:/Zhang Di/linshibangong/linshiMonkey/杭高院')
-rnr = read.csv('new_ssn_202406/response_by_homaIR.csv')[c("Animal_ID", "Sample_ID", "Effect_this", "type")]  # R/NR 根据homa-IR判断
+setwd('D:/GLP1RA/')
+rnr = read.csv('response_by_homaIR.csv')[c("Animal_ID", "Sample_ID", "Effect_this", "type")]  # R/NR based on homa-IR improvement
 test_id = rnr[rnr$type=='test', 'Sample_ID']
 rnr_ = structure(rnr$Effect_this, names=rnr$Sample_ID) 
 
-<1>. spe_edge里面包含的物种和表型的相关性
-(CHO,HDL,LDL,VLDL,NEFA,HBA1C,FBG,INS,TG,免疫细胞？)
+<1>.  Corr(species-phenotype)
+(CHO,HDL,LDL,VLDL,NEFA,HBA1C,FBG,INS,TG)
 library(stringr)
 library(corrplot)
 library(psych)
@@ -34,7 +34,6 @@ f = f[grepl('[FGH][0-9]+.T1', colnames(f))]
 colnames(f) = str_sub(colnames(f), 1, -4)
 rownames(f) = str_extract(rownames(f), 's__.*')
 
-！step1-所有样本做相关
 samples = colnames(f)
 f[1:3, 1:4]; p[1:3, 1:4]
 corr = corr.test(t(f), p[samples, ], method = 'spearman')$p
@@ -46,15 +45,9 @@ corrplot(a,  col.lim = c(0,1), col = color,  #tl.pos = 'n',
          is.corr = F, method = 'circle', tl.cex=0.4, cl.ratio=0.4)   # legend 表示1-p颜色手动换一下
 
 
-# 如果要设置circle大小相同，需要更改源代码成这段
-if (method == "circle" && plotCI == "n") {
-  symbols(Pos, add = TRUE, inches = FALSE, circles = asp_rescale_factor * 
-            0.9 * rep(0.8, nrow(a)*ncol(a)) ^0.5/2, fg = col.border, bg = col.fill)
-}
+</1>. Corr(species-phenotype)
 
-</1>. spe_edge里面包含的物种和表型的相关性
-
-<2>. 换变化的相关
+<2>. Corr(delta~)
 f = read.delim('raw_data/count result/species/Relative/Unigenes.relative.s.xls', 
                row.names = 1, check.names = F)[feat, ]
 colnames(f) = colnames(f)[c(2:ncol(f), 1)]
@@ -69,16 +62,11 @@ f = (t3-t1)/t1
 p = (p3-p1)/p1
 
 ... samples = ... row38
+</2>. Corr(delta~)
 
-这是换RNR的相关
-f0 = f
+
+<3> RvsNR
 f = f0[!colnames(f0) %in% test_id]
-f = f[colnames(f) %in% names(rnr_)[rnr_=='R']]  
-fnr = f0[c("F2", "F4", "F6", "G7", "G8", "H4", "H6", "H7", "H8", "H9")]
-</2>. 换变化的相关
-
-
-<3> RvsNRf = f0[!colnames(f0) %in% test_id]
 fr = f0[colnames(f0) %in% names(rnr_)[rnr_=='R']]  
 fnr = f0[c("F2", "F4", "F6", "G7", "G8", "H4", "H6", "H7", "H8", "H9")]
 
@@ -102,15 +90,15 @@ corp_nr = corp_nr[rownames(corr_nr),]
 
 squre = function(df){df**2 * df/abs(df)}
 
-作图
+
 corrplot(squre(corr_r), is.corr = T, p.mat = corp_r, sig.level = c(0.001, 0.01, 0.05), 
-         method = 'circle', insig = 'label_sig', # 区分显著不显著，可选项 p-value, blank, n, label_sig, pch
+         method = 'circle', insig = 'label_sig', 
          number.cex = 0.8, pch.col = 'black', pch.cex = 1, 
          tl.cex = 0.6, title = 'T1-R'
          )
 
 corrplot(corr_nr, is.corr = T, p.mat = corp_nr, sig.level = c(0.001, 0.01, 0.05), 
-         method = 'circle', insig = 'label_sig', # 区分显著不显著，可选项 p-value, blank, n, label_sig, pch
+         method = 'circle', insig = 'label_sig',
          number.cex = 0.8, pch.col = 'black', pch.cex = 1, 
          tl.cex = 0.6, title = 'T1-NR',
 )
