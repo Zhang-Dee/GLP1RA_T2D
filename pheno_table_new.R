@@ -1,11 +1,11 @@
-setwd('D:/Zhang Di/linshibangong/linshiMonkey/杭高院')
-rnr = read.csv('new_ssn_202406/response_by_homaIR.csv')[c("Animal_ID", "Sample_ID", "Effect_this", "type")]  # R/NR 根据homa-IR判断
-test_id = rnr[rnr$type=='test', 'Animal_ID']
+setwd('D:/GLP1RA/')
+rnr = read.csv('response_by_homaIR.csv')[c("Animal_ID", "Sample_ID", "Effect_this", "type")]  # R/NR based on homa-IR improvement
+test_id = rnr[rnr$type=='test', 'Sample_ID']
 rnr_ = structure(rnr$Effect_this, names=rnr$Sample_ID) 
 
 setwd('pheno_data/')
 library(ggpubr)
-library(effects) # 消除协变量影响
+library(effects) 
 library(multcomp)
 library(rstatix)
 library(reshape2)
@@ -18,7 +18,7 @@ for (fn in ls){
   f =  read.csv(paste0(fn,'.csv'))
   f = f[f$Group != 'VEH', ]
   f['Response'] = rnr_[f$Sample_ID]
-  f = f[- which(f$Animal_ID %in% test_id), ] # 是否纳入测试集的区别
+  f = f[- which(f$Animal_ID %in% test_id), ] 
   print(table(f$Response))
   
   df = f[c("Animal_ID", "Response", "Day_.7", "Day_29", "Day_57")]
@@ -41,29 +41,29 @@ for (fn in ls){
   # RvsNR-T1: independentStudent’sttest.
   vs_t1 = t.test(df[df$Response=='R', 'T1'], df[df$Response=='NR', 'T1'], paired = F)$p.value
   
-  # RvsNR-T2: ANCOVA controlling for baseline measurements 协方差分析
+  # RvsNR-T2: ANCOVA controlling for baseline measurements - covariance
   vs_t2 = aov(T2 ~ Response + T1, data = df) %>% summary(); vs_t2 = vs_t2[[1]]['Response', 'Pr(>F)']
   
-  #RvsNR-T3-a: ANCOVA controlling for baseline measurements 不必考虑T2的数据(除非你希望分析它们的影响——GPT4o)
+  #RvsNR-T3-a: ANCOVA controlling for baseline measurements 
   vs_t3 = aov(T3 ~ Response + T1, data = df) %>% summary(); vs_t3 = vs_t3[[1]]['Response', 'Pr(>F)']
   
-  #RvsNR-T3-b: 双因素方差分析,T3比较最终用这个,更好地处理每个样本的重复测量特性。
+  #RvsNR-T3-b: two-way ANOVA
   data_long <- melt(df, id.vars = c("Animal_ID", "Response", "T1"),
                     measure.vars = c("T2", "T3"),
                     variable.name = "time", value.name = "FBG")
   
-  ## rm_anova_model <- aov(FBG ~ Response * time + Error(Animal_ID/time), data = data_long)  # 不控制基线
-  ## aov_ = summary(rm_anova_model)[[3]][[1]]     # 不控制基线
-  rm_ancova_model <- aov(FBG ~ Response * time + T1 + Error(Animal_ID/time), data = data_long)  # 同时控制基线数据
+  ## rm_anova_model <- aov(FBG ~ Response * time + Error(Animal_ID/time), data = data_long) 
+  ## aov_ = summary(rm_anova_model)[[3]][[1]]    
+  rm_ancova_model <- aov(FBG ~ Response * time + T1 + Error(Animal_ID/time), data = data_long)  
   aov_ = summary(rm_ancova_model)[[3]][[1]]
   if (aov_['Response:time', 'Pr(>F)'] > 0.05){rp = aov_['Response ', 'Pr(>F)'] } else {
     emmeans_results <- emmeans(rm_ancova_model, ~ Response | time)     # rm_anova_model
-    rp =  pairs(emmeans_results, adjust = "tukey") %>% summary() # 查看两周后的组间比较
+    rp =  pairs(emmeans_results, adjust = "tukey") %>% summary()
     rp = rp[rp$time=='T3', 'p.value']
   }
   vs_t3 = rp
   
-  # R-NR-all的 mu±sem
+  # R-NR-all mu±sem
   mu = aggregate(df[,3:5], by=list(df$Response), FUN = 'mean')
   sem = aggregate(df[,3:5], by=list(df$Response), FUN = function(x){sd(x)/sqrt(length(x))})
   musem = data.frame(NR = paste(round(mu[1,2:4],2), round(sem[1,2:4],2), sep=' ± '),
@@ -95,11 +95,11 @@ write.csv(muSEM, 'pheno_table_train_new.csv', row.names = F, fileEncoding = 'GBK
 
 
 
-# 制作三种Cpd的表
+# Cpd table
 muSEM = c()
 for (fn in ls){
   f =  read.csv(paste0(fn,'.csv'))
-  f = f[- which(f$Animal_ID %in% test_id), ] # 是否纳入测试集的区别
+  f = f[- which(f$Animal_ID %in% test_id), ] 
   print(table(f$Group))
   
   df = f[c("Animal_ID", "Group", "Day_.7", "Day_29", "Day_57")]
@@ -133,7 +133,7 @@ for (fn in ls){
     # pdvsVEH-T3-a: ANCOVA controlling for baseline measurements 不必考虑T2的数据(除非你希望分析它们的影响——GPT4o)
     vs_t3 = aov(T3 ~ Group + T1, data = df[df$Group %in% c(g, 'VEH'), ]) %>% summary(); vs_t3 = vs_t3[[1]]['Group', 'Pr(>F)']
     
-    #RvsNR-T3-b: 双因素方差分析,T3比较最终用这个,更好地处理每个样本的重复测量特性。不用控制T1因为T1无显著差异。
+    #RvsNR-T3-b: two-way
     data_long <- melt(df[df$Group %in% c(g, 'VEH'), -ncol(df)], id.vars = c("Animal_ID", "Group", "T1"),
                       measure.vars = c("T2", "T3"),
                       variable.name = "time", value.name = "FBG")
@@ -142,15 +142,14 @@ for (fn in ls){
     aov_ = summary(rm_anova_model)[[3]][[1]]
     if (aov_['Group:time', 'Pr(>F)'] > 0.05){rp = aov_['Group ', 'Pr(>F)'] } else {
       emmeans_results <- emmeans(rm_anova_model, ~ Group | time)
-      rp =  pairs(emmeans_results, adjust = "tukey") %>% summary() # 查看两周后的组间比较
-      rp = rp[rp$time=='T3', 'p.value']
+      rp =  pairs(emmeans_results, adjust = "tukey") %>% summary() 
     }
     vs_t3 = rp
     
     cpd_veh_t123[[g]] = c(vs_t1, vs_t2, vs_t3)
   }
   
-  # cpd-VEH的 mu±sem
+  # cpd-VEH  mu±sem
   mu = aggregate(df[,3:5], by=list(df$Group), FUN = 'mean')
   sem = aggregate(df[,3:5], by=list(df$Group), FUN = function(x){sd(x)/sqrt(length(x))})
   musem = data.frame(CpdA = paste(round(mu[1,2:4],2), round(sem[1,2:4],2), sep=' ± '),
@@ -185,7 +184,7 @@ write.csv(muSEM, 'Cpd_table.csv', row.names = F, fileEncoding = 'GBK') # pheno_t
 
 
 
-# 整理所有样本的原始数据："Day_.7", "Day_29", "Day_57"
+# raw data："Day_.7", "Day_29", "Day_57"
 library(stringr)
 for (fn in ls){
   f =  read.csv(paste0(fn,'.csv'))
@@ -215,32 +214,4 @@ colnames(data) = str_replace(colnames(data), 'GLU', 'FBG (mg/dL)') %>%
 data$Response = gsub('NR', 'LR', data$Response)
 data = data[order(data$Batch, data$Group), ]
 write.csv(data, 'data_tidy.csv', row.names = F) # pheno_table_train
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## 把三种药物作为协变量做混合线性模型的话
-library(lme4)
-a = melt(df, id.vars = c('Animal_ID', 'Response'), variable.name = 'Time', value.name = 'FBG')
-a$Animal_ID = as.character(a$Animal_ID)
-a['Drug_Type'] = f[a$Animal_ID, 'Group']
-lmm_model <- lmer(FBG ~ Time * (Response + Drug_Type) + (1 | Animal_ID), data = a)
-summary(lmm_model)
-
-r = Anova(lmm_model, type = 3)
-print(r)
 
