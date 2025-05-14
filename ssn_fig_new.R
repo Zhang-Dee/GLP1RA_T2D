@@ -1,21 +1,17 @@
-setwd('D:/Zhang Di/linshibangong/linshiMonkey/杭高院')
-rnr = read.csv('new_ssn_202406/response_by_homaIR.csv')[c("Animal_ID", "Sample_ID", "Effect_this", "type")]  # R/NR 根据homa-IR判断
+setwd('D:/GLP1RA/')
+rnr = read.csv('response_by_homaIR.csv')[c("Animal_ID", "Sample_ID", "Effect_this", "type")]  # R/NR based on homa-IR improvement
 test_id = rnr[rnr$type=='test', 'Sample_ID']
 rnr_ = structure(rnr$Effect_this, names=rnr$Sample_ID) 
 
-
 library(igraph)
 library(stringr)
-setwd("D:/Zhang Di/linshibangong/linshiMonkey/杭高院/new_ssn_202406/")
-SSN = c( "F1", "F8", "F10", "G4", "G5", "G10", "H3", # 7 R sampleID - train
-         "F2", "F4", "F7", "G1", "G6", "G7",  "G8", "G9", "H1", "H4", "H6", "H7", "H9",# 13 NR sampleID - train
-         "F3", "F5", "F6", "F9", "G2", "G3", "H2", "H5", "H8", "H10" ) # 10 test sampleID
+SSN = c( "F1", "F8", "F10", "G4", "G5", "G10", "H3", # 7 R
+         "F2", "F4", "F7", "G1", "G6", "G7",  "G8", "G9", "H1", "H4", "H6", "H7", "H9", # 13 NR
+         "F3", "F5", "F6", "F9", "G2", "G3", "H2", "H5", "H8", "H10" ) # 10 - validation cohort
 
 
 
 {<species SSN> --------------------------------------------------------------
-# 因为每个SSN中的节点并不一致，在网络结构上不好直接比较
-# 因此只提取每个SSN都有的节点绘制网络图
 a = c()
 for (i in 1:20){
   fname = paste0('ssn_1e4_for_fig/SSN_', SSN[i], '.csv')
@@ -23,17 +19,16 @@ for (i in 1:20){
   a = c(a, sp)
 }
 a = table(a)
-co = names(a)[a==20] # 在20个SSN每个SSN都存在的节点
+co = names(a)[a==20]
 
 
-## 将每个SSN (提co节点), 剔除在75%另一组样本中出现的边后, 画SSN
 par(mfrow=c(2,5), mar=c(0,0,0,0))
 st = 0.75; st_r = round(13*st)-1; st_nr = round(7*st)-1
 for (i in 1:7){
   fname = paste0('ssn_1e4_for_fig/SSN_', SSN[i], '.csv')
   f = read.csv(fname, row.names = 1, encoding = 'utf-8'); colnames(f)=rownames(f)
   f = f[co, co] #%>% abs() #!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  #tax = taxonomy; tax['this_abundace'] = SSN[i]  # 不需要对节点设置颜色太花，想设置参考ssn_fig.R中的taxonomy
+  #tax = taxonomy; tax['this_abundace'] = SSN[i] 
   t = f
   
   for (j in 8:20){
@@ -51,7 +46,6 @@ for (i in 1:7){
   print(table(as.matrix(f)))
 
   g = graph_from_adjacency_matrix(as.matrix(f), mode = 'undirected', weighted = T, diag = FALSE)
-  g   #igraph 的邻接矩
   
   #bad.vs = V(g)$name[degree(g) < 2]
   #g = delete_vertices(g, bad.vs)
@@ -95,7 +89,7 @@ for (i in 8:20){
   print(table(as.matrix(f)))
   
   g = graph_from_adjacency_matrix(as.matrix(f), mode = 'undirected', weighted = T, diag = FALSE)
-  g   #igraph 的邻接矩
+  g  
   
   #bad.vs = V(g)$name[degree(g) < 2]
   #g = delete_vertices(g, bad.vs)
@@ -133,7 +127,7 @@ V(g)$color = adjustcolor(taxonomy[V(g)$name,]$color, alpha.f = 1)
 V(g)$size =15 #(taxonomy[V(g)$name,]$relative_abundance_R*1e5)**0.5
 V(g)$label = V(g)$name
 plot(g, vertex.label= '', 
-     edge.width=1.5,                      #edge.lty=1, vertex.label=V(igraph_matrix)$label
+     edge.width=1.5,                   
      edge.curved = F,
      layout = layout.sphere)
   
@@ -150,8 +144,6 @@ m1 = f[SSN[1:7]] %>% rowMeans() %>% sort(); m1 = names(m1)[m1 > 4e-4]
 m2 = f[SSN[8:20]] %>% rowMeans() %>% sort(); m2 = names(m2)[m2 > 4e-4]
 
 m = intersect(m1, m2)
-# 因为每个SSN中的节点并不一致，在网络结构上不好直接比较
-# 因此只提取每个SSN都有的节点绘制网络图
 a = c()
 for (i in 1:20){
   fname = paste0('ssn_1e4_for_fig/SSN_ko/SSN_', SSN[i], '.csv')
@@ -162,8 +154,6 @@ a = table(a)
 co = names(a)[a==20] # 在20个SSN每个SSN都存在的节点
 co = co[co %in% m]
 
-
-## 将每个SSN (提co节点), 剔除在75%另一组样本中出现的边后, 画SSN
 par(mfrow=c(2,5), mar=c(0,0,0,0))
 st = 0.75; st_r = round(13*st) -1; st_nr = round(7*st)-1
 #st_r = 10; st_nr = 4
@@ -189,7 +179,6 @@ for (i in 1:7){
   print(table(as.matrix(f)))
   
   g = graph_from_adjacency_matrix(as.matrix(f), mode = 'undirected', weighted = T, diag = FALSE)
-  g   #igraph 的邻接矩
   
   #bad.vs = V(g)$name[degree(g) < 2]
   #g = delete_vertices(g, bad.vs)
@@ -232,14 +221,13 @@ for (i in 8:20){
   print(table(as.matrix(f)))
   
   g = graph_from_adjacency_matrix(as.matrix(f), mode = 'undirected', weighted = T, diag = FALSE)
-  g   #igraph 的邻接矩
   
   #bad.vs = V(g)$name[degree(g) < 2]
   #g = delete_vertices(g, bad.vs)
   bad.vs = V(g)$name[degree(g) == 0]
   g = delete_vertices(g, bad.vs)
   wt = E(g)$weight; E(g)$weight = NA
-  E(g)$color = adjustcolor(ifelse(wt>0, 'red', '#3b7cb7'), alpha.f = 0.5)  ##D74E96红#00A9E8蓝
+  E(g)$color = adjustcolor(ifelse(wt>0, 'red', '#3b7cb7'), alpha.f = 0.5) 
   E(g)$lty = 'solid' # ifelse(wt>0, 'solid', 'dashed')
   #V(g)$color = adjustcolor(tax[V(g)$name,]$color, alpha.f = 0.8)
   V(g)$color = 'white'
