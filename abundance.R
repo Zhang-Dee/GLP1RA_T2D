@@ -1,40 +1,39 @@
 <1>.alpha-abundance 统计箱线图
-#组间比较（先正态性检验,方差齐性检验后）
-setwd('D:/Zhang Di/linshibangong/linshiMonkey/杭高院/RNR_compare/abundance_compare/')
-alpha_diversity = read.csv('alpha_diversity_T1.csv', row.names = 1)  # T2-T3同
+setwd('D:/GLP1RA/RNR_compare/abundance_compare/')
+alpha_diversity = read.csv('alpha_diversity_T1.csv', row.names = 1)  
 test_id = c("F3",  "F5",  "F6",  "G2",  "G3" , "H5",  "H8",  "F9" , "H2",  "H10")
-alpha_diversity = alpha_diversity[!rownames(alpha_diversity) %in% test_id, ] # train set
+alpha_diversity = alpha_diversity[!rownames(alpha_diversity) %in% test_id, ] 
 alpha_diversity$effect = factor(alpha_diversity$effect)
 
 r <- alpha_diversity[alpha_diversity$effect == 'R', 1:6]
 nr <- alpha_diversity[alpha_diversity$effect == 'NR', 1:6]
-pr <- apply(r, MARGIN = 2, shapiro.test); pr <- as.numeric(sapply(pr, '[', 2)) #也可以直接unlist(pr)转化为向量
+pr <- apply(r, MARGIN = 2, shapiro.test); pr <- as.numeric(sapply(pr, '[', 2)) 
 pnr <-apply(nr, MARGIN = 2, shapiro.test); pnr <- as.numeric(sapply(pnr, '[', 2))
-pr;pnr  # 大都p>0.05
-#shapiro.test检验正态性，p>0.05认为正态分布
-#bartlett.test检验方差齐性，p>0.05认为齐
+pr;pnr  
+#shapiro.test
+#bartlett.test
 var_equal <- function(x) {
   bartlett.test(x = x, g = alpha_diversity$effect)$p.value
 }
-apply(alpha_diversity[ ,1:6], MARGIN = 2, var_equal) #不算coverage
-#正态且方差齐：t检验
+apply(alpha_diversity[ ,1:6], MARGIN = 2, var_equal) 
+
 ttest <- function(x){
   t.test(x[alpha_diversity$effect == 'R'], x[alpha_diversity$effect == 'NR'], paired = FALSE, var.equal = TRUE)$p.value
 }
-apply(alpha_diversity[,1:6], MARGIN = 2, ttest)  #都不显著, beta多样性也在T1-3都不显著
+apply(alpha_diversity[,1:6], MARGIN = 2, ttest) 
 
-#可视化
+#visualization
 library(ggplot2)
 library(ggpubr)
 library(reshape2)
 dat = alpha_diversity[grepl('[FGH]', rownames(alpha_diversity)), -7]
 dat[1:6] = apply(dat[1:6], 2, scale) 
 dat <- melt(dat, id.vars = 'effect')
-dat$variable = apply(dat['variable'], 1, function(x){paste0(toupper(substr(x,1,1)), str_sub(x,2))}) # 首字母大写
+dat$variable = apply(dat['variable'], 1, function(x){paste0(toupper(substr(x,1,1)), str_sub(x,2))}) 
 dat$variable = factor(dat$variable, levels=c('Shannon', 'Chao1', 'Richness', 'Ace', 'Simpson', 'Pielou'))
 
 ggplot(dat, aes(x=variable, y=value, color=effect))+
-  geom_boxplot(width=0.6, size=0.8) +    #, outlier.size = 0.3
+  geom_boxplot(width=0.6, size=0.8) +   
   scale_color_manual(values = c('#E68460', '#8DCDD5')) +
   theme_bw() + labs(x='',y='Scaled α-Diversity') +
   theme( #aspect.ratio = 2/1, 
@@ -43,7 +42,7 @@ ggplot(dat, aes(x=variable, y=value, color=effect))+
     legend.position = 'right') + 
   stat_compare_means(label = 'p.signif', method = 't.test') #t.test
 
-## T2-T3时刻的多样性需要重复测量方差分析
+## repeat measured ANOVA
 library(rstatix)
 ab_t1 = read.csv('alpha_diversity_T1.csv', row.names = 1)
 ab_t2 = read.csv('alpha_diversity_T2.csv', row.names = 1)
@@ -65,16 +64,15 @@ for (ab in 1:6) {
   dat$time = factor(dat$time)
   
   aov = anova_test(data = dat, dv = FBG, wid = Animal_ID, within = time, between = Response) 
-  anova_result[ab] = get_anova_table(aov)$p # 交互效应如果显著做后面simple main effect 不显著算到这就可以
+  anova_result[ab] = get_anova_table(aov)$p # simple main effect? 
 }
 anova_result
 write.csv(anova_result, 'two_way_repeat_anova_T3_abundance.csv')
 
-</1> alpha-abnundace 可视化
+</1> alpha-abnundace visualization
 
 
-<2> Shannon单独展示
-...从- dat = alpha_diversity[grepl('[FGH]', rownames(alpha_diversity)), -7]
+<2> Shannon
 dat = dat[c('shannon', 'effect')]
 dat = melt(dat, id.vars = 'effect')
 ggplot(dat, aes(effect, value, color = effect)) + 
@@ -86,20 +84,19 @@ ggplot(dat, aes(effect, value, color = effect)) +
         aspect.ratio = 2/1) + 
   stat_compare_means(label='p.signif', method='t.test')
   
-  
-</2> Shannon单独展示
+
+</2> Shannon
 
 
 
 
 
 <3> DEG- heatmap
-setwd("D:/Zhang Di/linshibangong/linshiMonkey/杭高院/direct_data")
 library(pheatmap)
 f = read.csv('spe_7level_T1.csv', row.names = 1, encoding = 'utf-8')
 f = f[grepl('[FGH]', colnames(f))]
 colnames(f) = str_sub(colnames(f), 1, -4)
-df = data.frame(t(f[!colnames(f) %in% test_id]))  # 只取train set
+df = data.frame(t(f[!colnames(f) %in% test_id]))  
 colnames(df) = rownames(f)
 dim(df)
 
@@ -116,8 +113,8 @@ dat_R = df[which(df$Effect == 'R'),]
 dat_NR = df[which(df$Effect == 'NR'),]
 dat = rbind(dat_R, dat_NR)
 
-annotation_col = data.frame(SG = dat$Effect, row.names=rownames(dat))  #annotation_row = data.frame(SG = p, row.names=rownames(deg))
-annotation_col$SG = factor(annotation_col$SG, levels = c('R', 'NR'))   # annotation_row$SG = factor(annotation_row$SG, levels = names(sort(table(p))))
+annotation_col = data.frame(SG = dat$Effect, row.names=rownames(dat))  
+annotation_col$SG = factor(annotation_col$SG, levels = c('R', 'NR'))  
 annotation_color = list(SG = c('R' = '#8DCDD5', 'NR' = '#E6846D'))  
 dat = t(dat[-ncol(dat)])
 
