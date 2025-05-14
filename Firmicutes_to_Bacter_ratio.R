@@ -1,10 +1,9 @@
-setwd('D:/Zhang Di/linshibangong/linshiMonkey/杭高院')
-rnr = read.csv('new_ssn_202406/response_by_homaIR.csv')[c("Animal_ID", "Sample_ID", "Effect_this", "type")]  # R/NR 根据homa-IR判断
+setwd('D:/GLP1RA/')
+rnr = read.csv('response_by_homaIR.csv')[c("Animal_ID", "Sample_ID", "Effect_this", "type")]  # R/NR based on homa-IR improvement
 test_id = rnr[rnr$type=='test', 'Sample_ID']
 rnr_ = structure(rnr$Effect_this, names=rnr$Sample_ID) 
 
 <1>. Firmicutes/Bacteroidetes Ratio
-setwd("D:/Zhang Di/linshibangong/linshiMonkey/杭高院/direct_data/")
 
 library(stringr)
 library(ggplot2)
@@ -12,32 +11,30 @@ library(reshape2)
 library(ggpubr)
 f = read.csv('spe_7level_T1.csv', row.names = 1)
 
-f = f[rownames(f) %in% c("k__Bacteria;p__Firmicutes", "k__Bacteria;p__Bacteroidetes"), ]  # g; 只取给药组
-rownames(f) = str_sub(str_extract(rownames(f), ';[a-z]__.*'), 5) # 删掉前缀
+f = f[rownames(f) %in% c("k__Bacteria;p__Firmicutes", "k__Bacteria;p__Bacteroidetes"), ]  
+rownames(f) = str_sub(str_extract(rownames(f), ';[a-z]__.*'), 5) 
 colnames(f) = str_sub(colnames(f), 1, -4)
 
-f = f[!colnames(f) %in% test_id]  # 只取train set
+f = f[!colnames(f) %in% test_id]  
 
 r = f[colnames(f) %in% names(rnr_)[rnr_=='R']]
 nr = f[colnames(f) %in% names(rnr_)[rnr_=='NR']]
 
 rm_outlier = function(vec){
-  # 计算箱线图的上下限
   lower_bound <- quantile(vec, 0.25) - 1.5 * IQR(vec)
   upper_bound <- quantile(vec, 0.75) + 1.5 * IQR(vec)
-  # 筛选出非异常值的数据
   filtered_data <- vec[vec >= lower_bound & vec <= upper_bound]
   if (length(filtered_data)==length(vec)){print('0 be filtered.')} else {print(which(!vec %in% filtered_data )); print('st be filtered')} 
   filtered_data
 }
 a = rm_outlier(as.numeric(r[1,]/r[2,]))
-b = rm_outlier(as.numeric(nr[1,]/nr[2,]))  # 检查过滤掉哪个
+b = rm_outlier(as.numeric(nr[1,]/nr[2,]))  
 wilcox.test(a,b)
 
 
 dat = data.frame(t(cbind(r[1,]/r[2,], nr[1,]/nr[2,])), 
                  Response = c(rep('R', ncol(r)), rep('NR', ncol(nr))))
-dat = dat[rownames(dat)!='G9', ]    ## G9异常值
+dat = dat[rownames(dat)!='G9', ]    
 ggplot(dat, aes(Response, Firmicutes, color=Response)) +
   geom_boxplot(width=0.6, size=0.9, alpha=0.5) +
   geom_jitter(size=1.3, pch=1, width = 0.2, stroke=1.5, alpha=0.6) +  
@@ -52,9 +49,9 @@ ggplot(dat, aes(Response, Firmicutes, color=Response)) +
 
 dat_T1 = dat
 
-# T3时刻与T1比较
+
 f = read.csv('spe_7level_T3.csv', row.names = 1)
-... 'G6'应去除
+
 
 sid = intersect(rownames(dat_t1), rownames(dat))
 dat_new = cbind(dat_T1[sid,], dat[sid, ])[-2]
